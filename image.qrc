@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/red.png</file>
+        <file>icons/green.png</file>
+        <file>icons/logo.png</file>
+        <file>icons/hamlyn.jpg</file>
+    </qresource>
+</RCC>
