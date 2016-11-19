@@ -28,12 +28,19 @@ Logger::Logger(QString active_arm_) :
 
     std::string psm1_curr_pose_tpc ("/dvrk/PSM1/position_cartesian_current");
     std::string psm2_curr_pose_tpc ("/dvrk/PSM2/position_cartesian_current");
+
+    std::string psm1_curr_jnt_tpc ("/dvrk/PSM1/state_joint_current");
+    std::string psm2_curr_jnt_tpc ("/dvrk/PSM2/state_joint_current");
+
     std::string psm3_curr_pose_tpc ("/dvrk/PSM3/position_cartesian_current");
     std::string mtml_curr_pose_tpc ("/dvrk/MTML/position_cartesian_current");
     std::string mtmr_curr_pose_tpc ("/dvrk/MTMR/position_cartesian_current");
     std::string ecm_curr_pose_tpc  ("/dvrk/ECM/position_cartesian_current");
     psm1_sub_ = nh.subscribe(psm1_curr_pose_tpc, 1, &Logger::currentPSM1PoseStampedCallback, this);
     psm2_sub_ = nh.subscribe(psm2_curr_pose_tpc, 1, &Logger::currentPSM2PoseStampedCallback, this);
+    psm1_jnt_sub_ = nh.subscribe(psm1_curr_jnt_tpc, 1, &Logger::currentPSM1JointStampedCallback, this);
+    psm2_jnt_sub_ = nh.subscribe(psm2_curr_jnt_tpc, 1, &Logger::currentPSM2JointStampedCallback, this);
+
     mtml_sub_ = nh.subscribe(mtml_curr_pose_tpc, 1, &Logger::currentMTMLPoseStampedCallback, this);
     mtmr_sub_ = nh.subscribe(mtmr_curr_pose_tpc, 1, &Logger::currentMTMRPoseStampedCallback, this);
 }
@@ -327,7 +334,7 @@ void Logger::process_loop() {
 //        for (int i = 0; i < 7; i++)
 //            m_pose_file << std::setprecision(6) << psm2_pose[i] << ",";
             // TODO: read jaw angle and save
-            m_pose_file << std::setprecision(3) << 0.0 << "," << 0.0 << "," << 0.0 << ",";
+            m_pose_file << std::setprecision(3) << psm_jaw[0] << "," << psm_jaw[1] << "," << psm_jaw[2] << ",";
             for (int i = 0; i < 7; i++)
                 m_pose_file << std::setprecision(6) << mtml_pose[i] << ",";
             for (int i = 0; i < 6; i++)
@@ -338,8 +345,12 @@ void Logger::process_loop() {
         }
     }
 
-    QString psm1_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm1_pose[4]), QString::number(psm1_pose[5]), QString::number(psm1_pose[6]));
-    QString psm2_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm2_pose[4]), QString::number(psm2_pose[5]), QString::number(psm2_pose[6]));
+    QString psm1_msg = QString("X: %1\nY:%2\nZ:%3\nJaw:%4 deg").arg(
+            QString::number(psm1_pose[4]), QString::number(psm1_pose[5]), QString::number(psm1_pose[6]),
+            QString::number(psm_jaw[0]*180/M_PI));
+    QString psm2_msg = QString("X: %1\nY:%2\nZ:%3\nJaw:%4 deg").arg(
+            QString::number(psm2_pose[4]), QString::number(psm2_pose[5]), QString::number(psm2_pose[6]),
+            QString::number(psm_jaw[1]*180/M_PI));
     QString mtml_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtml_pose[4]), QString::number(mtml_pose[5]), QString::number(mtml_pose[6]));
     QString mtmr_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtmr_pose[4]), QString::number(mtmr_pose[5]), QString::number(mtmr_pose[6]));
 
@@ -378,6 +389,16 @@ void Logger::currentPSM2PoseStampedCallback(const geometry_msgs::PoseStampedCons
     m_arm_updated = true;
 }
 
+
+void Logger::currentPSM1JointStampedCallback(const sensor_msgs::JointState &msg) {
+    psm_jaw[0] = msg.position[6];
+}
+
+void Logger::currentPSM2JointStampedCallback(const sensor_msgs::JointState &msg) {
+    psm_jaw[1] = msg.position[6];
+}
+
+
 void Logger::currentMTMLPoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg) {
     QMutexLocker locker(&mx_mtml);
     mtml_pose[0] = msg->pose.orientation.w;
@@ -410,6 +431,7 @@ void Logger::init_pose() {
         mtml_pose[i] = std::numeric_limits<double>::quiet_NaN();
         mtmr_pose[i] = std::numeric_limits<double>::quiet_NaN();
     }
+    psm_jaw[0] = psm_jaw[1] = psm_jaw[2] = std::numeric_limits<double>::quiet_NaN();
 }
 
 

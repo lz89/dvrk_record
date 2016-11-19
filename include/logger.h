@@ -20,6 +20,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <sensor_msgs/JointState.h>
 #include <opencv2/highgui/highgui.hpp>
 
 
@@ -46,6 +47,8 @@ namespace dvrk {
 
         ros::Subscriber psm1_sub_;
         ros::Subscriber psm2_sub_;
+        ros::Subscriber psm1_jnt_sub_;
+        ros::Subscriber psm2_jnt_sub_;
         ros::Subscriber mtml_sub_;
         ros::Subscriber mtmr_sub_;
 
@@ -53,6 +56,9 @@ namespace dvrk {
         void ultrasoundCallback (const sensor_msgs::ImageConstPtr& img_msg);
         void currentPSM1PoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg);
         void currentPSM2PoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg);
+        void currentPSM1JointStampedCallback(const sensor_msgs::JointState &msg);
+        void currentPSM2JointStampedCallback(const sensor_msgs::JointState &msg);
+
         void currentMTMLPoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg);
         void currentMTMRPoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg);
 
@@ -91,6 +97,8 @@ namespace dvrk {
         QMutex mx_psm1, mx_psm2, mx_mtml, mx_mtmr;
 
         double psm1_pose[7], psm2_pose[7], mtml_pose[7], mtmr_pose[7];
+
+        double psm_jaw[3];  // PSM1-3
 
         bool m_stereo_updated;
         bool m_ultrasound_updated;
