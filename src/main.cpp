@@ -8,12 +8,12 @@
 #include "logger.h"
 
 ///Connect Signals and Slots only relevant for the graphical interface
-void gui_connections(dvrk::GraphicalUserInterface* gui
+void gui_connections(GraphicalUserInterface* gui
                      , dvrk::Logger* logger)
 {
 
     // Connect button signal to appropriate slot
-    QObject::connect(gui, SIGNAL(StartRecord()), logger, SLOT(start_record()));
+    QObject::connect(gui, SIGNAL(StartRecord(int)), logger, SLOT(start_record(int)));
     QObject::connect(gui, SIGNAL(StopRecord()), logger, SLOT(stop_record()));
 
     QObject::connect(logger,  SIGNAL(newStereoImage(QImage)), gui, SLOT(newStereoImage(QImage)));
@@ -22,6 +22,7 @@ void gui_connections(dvrk::GraphicalUserInterface* gui
     QObject::connect(logger,  SIGNAL(setInfo1(QString)), gui, SLOT(setInfo1(QString)));
     QObject::connect(logger,  SIGNAL(setInfo2(QString)), gui, SLOT(setInfo2(QString)));
     QObject::connect(logger,  SIGNAL(setTimeCount(QString)), gui, SLOT(setTimeCount(QString)));
+    QObject::connect(logger,  SIGNAL(setArmPos(QString,QString,QString,QString)), gui, SLOT(setArmPos(QString,QString,QString,QString)));
 
 }
 
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
 
 
 
-    dvrk::GraphicalUserInterface *gui = new dvrk::GraphicalUserInterface();
+    GraphicalUserInterface *gui = new GraphicalUserInterface();
     gui->show();
     gui_connections(gui, &logger);
 

@@ -12,13 +12,15 @@ namespace Ui {
     class MainWindow;
 }
 
-namespace dvrk {
-
-
 class GraphicalUserInterface : public QMainWindow, private Ui::GraphicalUserInterface
 {
     Q_OBJECT
 public:
+
+    enum RecordSource{ UNKNOWN = 0,
+        STEREO = 2,
+        ULTRASOUND = 4,
+        ARM = 8}; // Match logger class
 
     GraphicalUserInterface();
 
@@ -26,7 +28,7 @@ signals:
     /***
      * Record related
      * */
-    void StartRecord();
+    void StartRecord(int);
     void StopRecord();
 
 public slots:
@@ -40,6 +42,8 @@ public slots:
     void setStatusMsg(QString msg);
 
     void setTimeCount(QString msg);
+
+    void setArmPos(QString,QString,QString,QString);
 
 
 private slots:
@@ -59,9 +63,5 @@ private:
     QPixmap m_hamlyn_logo;
 
 };
-
-}
-
-
 
 #endif

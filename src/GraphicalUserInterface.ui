@@ -28,7 +28,13 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="QLabel" name="stereo_label">
+           <widget class="AspectRatioPixmapLabel" name="stereo_label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>Stereo Image</string>
             </property>
@@ -181,16 +187,9 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="2" column="0">
-          <widget class="QCheckBox" name="psm1_checkBox">
+          <widget class="QCheckBox" name="arm_checkBox">
            <property name="text">
-            <string>PSM1</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QCheckBox" name="mtml_checkBox">
-           <property name="text">
-            <string>MTML</string>
+            <string>Arm</string>
            </property>
           </widget>
          </item>
@@ -211,20 +210,6 @@
           <widget class="QCheckBox" name="ultrasound_checkBox">
            <property name="text">
             <string>Ultrasound</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="psm2_checkBox">
-           <property name="text">
-            <string>PSM2</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QCheckBox" name="mtmr_checkBox">
-           <property name="text">
-            <string>MTMR</string>
            </property>
           </widget>
          </item>
@@ -392,6 +377,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>AspectRatioPixmapLabel</class>
+   <extends>QLabel</extends>
+   <header location="global">aspectratiopixmaplabel.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -19,11 +19,12 @@ Logger::Logger(QString active_arm_) :
      * ROS related init
      * */
     std::string stereo_tpc ("/davinci/stereo_image");
+    std::string ultrasound_tpc ("/davinci/ultrasound_image");
 
     ros::NodeHandle nh;
     int q = 1;  // queue size
     stereo_sub_ = nh.subscribe<sensor_msgs::Image> (stereo_tpc, 1, &Logger::stereoCallback, this);
-    ultrasound_sub_ = nh.subscribe<sensor_msgs::Image> (stereo_tpc, 1, &Logger::ultrasoundCallback, this);
+    ultrasound_sub_ = nh.subscribe<sensor_msgs::Image> (ultrasound_tpc, 1, &Logger::ultrasoundCallback, this);
 
     std::string psm1_curr_pose_tpc ("/dvrk/PSM1/position_cartesian_current");
     std::string psm2_curr_pose_tpc ("/dvrk/PSM2/position_cartesian_current");
@@ -52,7 +53,7 @@ Logger::~Logger()
 
 void Logger::stereoCallback (const sensor_msgs::ImageConstPtr& stereo_img_msg)
 {
-    mx_stereo.lock();
+    QMutexLocker locker(&mx_stereo);
     try
     {
         stereo_rgb8_img_ = cv_bridge::toCvCopy(stereo_img_msg, sensor_msgs::image_encodings::BGR8)->image;
@@ -85,10 +86,11 @@ void Logger::ultrasoundCallback(const sensor_msgs::ImageConstPtr &img_msg) {
 }
 
 
-void Logger::start_record()
+void Logger::start_record(int source)
 {
     if (isRec)
         return;
+    m_record_source = source;
     isRec = true;
     frame_count = 1;
     m_time_start = std::chrono::system_clock::now();
@@ -281,13 +283,12 @@ void Logger::process_loop() {
     }
 
     // PSM
-    if ((m_record_source & PSM1) || (m_record_source & PSM2) ||
-        (m_record_source & MTML) || (m_record_source & MTMR))
+    if (m_record_source & ARM)
     {
         if (!m_pose_file.is_open() && isRec)
         {
             char buffer_pose [100];
-            strftime (buffer_pose,80,"capture-%G%b%dT%H%M%S",now);
+            strftime (buffer_pose,80,"arm-%G%b%dT%H%M%S",now);
 
             m_pose_filename = "/home/hamlyn/temp/";
             m_pose_filename += buffer_pose;
@@ -314,7 +315,7 @@ void Logger::process_loop() {
         QMutexLocker locker3(&mx_mtml);
         QMutexLocker locker4(&mx_mtmr);
 
-        if (isRec)
+        if (isRec && m_arm_updated)
         {
             m_pose_file << frame_count++ << ",";
             m_pose_file <<  static_cast<u_int32_t>(ros::Time::now().toNSec() * 1e-6) << ",";
@@ -333,14 +334,16 @@ void Logger::process_loop() {
                 m_pose_file << std::setprecision(6) << mtmr_pose[i] << ",";
             m_pose_file << std::setprecision(6) << mtmr_pose[6] << std::endl;
 
-            QString psm1_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm1_pose[4]), QString::number(psm1_pose[5]), QString::number(psm1_pose[6]));
-            QString psm2_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm2_pose[4]), QString::number(psm2_pose[5]), QString::number(psm2_pose[6]));
-            QString mtml_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtml_pose[4]), QString::number(mtml_pose[5]), QString::number(mtml_pose[6]));
-            QString mtmr_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtmr_pose[4]), QString::number(mtmr_pose[5]), QString::number(mtmr_pose[6]));
-
-            Q_EMIT setArmPos(psm1_msg, psm2_msg, mtml_msg, mtmr_msg);
+            m_arm_updated = false;
         }
     }
+
+    QString psm1_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm1_pose[4]), QString::number(psm1_pose[5]), QString::number(psm1_pose[6]));
+    QString psm2_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(psm2_pose[4]), QString::number(psm2_pose[5]), QString::number(psm2_pose[6]));
+    QString mtml_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtml_pose[4]), QString::number(mtml_pose[5]), QString::number(mtml_pose[6]));
+    QString mtmr_msg = QString("X: %1\nY:%2\nZ:%3").arg(QString::number(mtmr_pose[4]), QString::number(mtmr_pose[5]), QString::number(mtmr_pose[6]));
+
+    Q_EMIT setArmPos(psm1_msg, psm2_msg, mtml_msg, mtmr_msg);
 
     if (isRec)
     {
@@ -360,7 +363,7 @@ void Logger::currentPSM1PoseStampedCallback(const geometry_msgs::PoseStampedCons
     psm1_pose[4] = msg->pose.position.x;
     psm1_pose[5] = msg->pose.position.y;
     psm1_pose[6] = msg->pose.position.z;
-    m_psm1_updated = true;
+    m_arm_updated = true;
 }
 
 void Logger::currentPSM2PoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg) {
@@ -372,7 +375,7 @@ void Logger::currentPSM2PoseStampedCallback(const geometry_msgs::PoseStampedCons
     psm2_pose[4] = msg->pose.position.x;
     psm2_pose[5] = msg->pose.position.y;
     psm2_pose[6] = msg->pose.position.z;
-    m_psm2_updated = true;
+    m_arm_updated = true;
 }
 
 void Logger::currentMTMLPoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg) {
@@ -384,7 +387,7 @@ void Logger::currentMTMLPoseStampedCallback(const geometry_msgs::PoseStampedCons
     mtml_pose[4] = msg->pose.position.x;
     mtml_pose[5] = msg->pose.position.y;
     mtml_pose[6] = msg->pose.position.z;
-    m_mtml_updated = true;
+    m_arm_updated = true;
 }
 
 void Logger::currentMTMRPoseStampedCallback(const geometry_msgs::PoseStampedConstPtr &msg) {
@@ -396,7 +399,7 @@ void Logger::currentMTMRPoseStampedCallback(const geometry_msgs::PoseStampedCons
     mtmr_pose[4] = msg->pose.position.x;
     mtmr_pose[5] = msg->pose.position.y;
     mtmr_pose[6] = msg->pose.position.z;
-    m_mtmr_updated = true;
+    m_arm_updated = true;
 }
 
 void Logger::init_pose() {

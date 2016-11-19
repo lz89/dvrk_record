@@ -34,10 +34,7 @@ namespace dvrk {
         enum RecordSource{ UNKNOWN = 0,
             STEREO = 2,
             ULTRASOUND = 4,
-            PSM1 = 8,
-            PSM2 = 16,
-            MTML = 32,
-            MTMR = 64};
+            ARM = 8};
 
         Logger(QString active_arm_ = "");
         ~Logger();
@@ -97,7 +94,7 @@ namespace dvrk {
 
         bool m_stereo_updated;
         bool m_ultrasound_updated;
-        bool m_psm1_updated, m_psm2_updated, m_mtml_updated, m_mtmr_updated;
+        bool m_arm_updated;
 
 
         bool isRec;
@@ -111,7 +108,7 @@ namespace dvrk {
 
 
     private Q_SLOTS:
-        void start_record();
+        void start_record(int);
         void stop_record();
         void process_loop();
 
